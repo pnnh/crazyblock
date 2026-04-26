@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 
-type ActionName = 'left' | 'right' | 'rotateCW' | 'rotateCCW' | 'fastDropStart' | 'fastDropEnd' | 'pause';
+type ActionName = 'left' | 'right' | 'rotateCW' | 'rotateCCW' | 'fastDropStart' | 'fastDropEnd' | 'hardDrop' | 'pause';
 type ActionCallback = () => void;
 
 interface RepeatState {
     isDown: boolean;
+    startedAt: number;
+    lastRepeat: number;
+}
+
+interface ButtonMoveState {
     startedAt: number;
     lastRepeat: number;
 }
@@ -18,10 +23,10 @@ export class InputManager {
     private readonly callbacks = new Map<ActionName, ActionCallback[]>();
     private readonly repeatStates = new Map<number, RepeatState>();
     private readonly moveKeys: Phaser.Input.Keyboard.Key[] = [];
-    private readonly leftPointerIds = new Set<number>();
-    private readonly leftHoldStart = new Map<number, number>();
-    private readonly leftHoldTriggered = new Set<number>();
-    private fastDropPointerCount = 0;
+    private leftMoveState: ButtonMoveState | null = null;
+    private rightMoveState: ButtonMoveState | null = null;
+    private wheelFastDropActive = false;
+    private wheelFastDropTimer = 0;
     private sKeyHoldStart = 0;
     private sKeyFastDropActive = false;
 
@@ -72,15 +77,12 @@ export class InputManager {
             this.updateRepeatKey(key, now);
         }
 
-        for (const pointerId of this.leftPointerIds) {
-            const startedAt = this.leftHoldStart.get(pointerId);
-            if (startedAt !== undefined && !this.leftHoldTriggered.has(pointerId) && now - startedAt >= InputManager.HOLD_THRESHOLD) {
-                this.leftHoldTriggered.add(pointerId);
-                this.fastDropPointerCount++;
-                if (this.fastDropPointerCount === 1) {
-                    this.emit('fastDropStart');
-                }
-            }
+        this.updatePointerMove(this.leftMoveState, 'left', now);
+        this.updatePointerMove(this.rightMoveState, 'right', now);
+
+        if (this.wheelFastDropActive && now >= this.wheelFastDropTimer) {
+            this.wheelFastDropActive = false;
+            this.emit('fastDropEnd');
         }
 
         if (this.keyS.isDown && this.sKeyHoldStart > 0 && !this.sKeyFastDropActive && now - this.sKeyHoldStart >= InputManager.HOLD_THRESHOLD) {
@@ -137,39 +139,23 @@ export class InputManager {
     }
 
     private handlePointerDown(pointer: Phaser.Input.Pointer): void {
-        if (pointer.rightButtonDown()) {
-            return;
-        }
-
+        const now = this.scene.time.now;
         if (pointer.leftButtonDown()) {
-            this.leftPointerIds.add(pointer.id);
-            this.leftHoldStart.set(pointer.id, this.scene.time.now);
+            this.leftMoveState = { startedAt: now, lastRepeat: now };
+            this.emit('left');
+        } else if (pointer.rightButtonDown()) {
+            this.rightMoveState = { startedAt: now, lastRepeat: now };
+            this.emit('right');
         }
     }
 
     private handlePointerUp(pointer: Phaser.Input.Pointer): void {
+        if (pointer.leftButtonReleased()) {
+            this.leftMoveState = null;
+        }
         if (pointer.rightButtonReleased()) {
-            this.emit('right');
-            return;
+            this.rightMoveState = null;
         }
-
-        if (!this.leftPointerIds.has(pointer.id)) {
-            return;
-        }
-
-        const didHold = this.leftHoldTriggered.has(pointer.id);
-        if (didHold) {
-            this.fastDropPointerCount = Math.max(0, this.fastDropPointerCount - 1);
-            if (this.fastDropPointerCount === 0) {
-                this.emit('fastDropEnd');
-            }
-        } else {
-            this.emit('left');
-        }
-
-        this.leftPointerIds.delete(pointer.id);
-        this.leftHoldStart.delete(pointer.id);
-        this.leftHoldTriggered.delete(pointer.id);
     }
 
     private handleWheel(
@@ -181,7 +167,11 @@ export class InputManager {
         if (deltaY < 0) {
             this.emit('rotateCW');
         } else if (deltaY > 0) {
-            this.emit('rotateCCW');
+            this.wheelFastDropTimer = this.scene.time.now + 400;
+            if (!this.wheelFastDropActive) {
+                this.wheelFastDropActive = true;
+                this.emit('fastDropStart');
+            }
         }
     }
 
@@ -240,6 +230,21 @@ export class InputManager {
 
         this.sKeyHoldStart = 0;
         this.sKeyFastDropActive = false;
+    }
+
+    private updatePointerMove(state: ButtonMoveState | null, direction: 'left' | 'right', now: number): void {
+        if (!state) {
+            return;
+        }
+
+        if (now - state.startedAt < InputManager.HOLD_THRESHOLD) {
+            return;
+        }
+
+        if (now - state.lastRepeat >= InputManager.REPEAT_RATE) {
+            state.lastRepeat = now;
+            this.emit(direction);
+        }
     }
 
     private updateRepeatKey(key: Phaser.Input.Keyboard.Key, now: number): void {

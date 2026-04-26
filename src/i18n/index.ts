@@ -27,7 +27,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
         title: '疯狂方块',
         subtitle: 'CRAZY BLOCK',
         start: '点击空白处或按空格开始',
-        startHint: '左键左移 | 右键右移 | 滚轮旋转 | 长按左键快降',
+        startHint: '按住左/右键持续移动 | 点击单步 | 下滚快降 | 上滚顺时针',
         score: '分数',
         level: '等级',
         lines: '消行',
@@ -40,14 +40,14 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
         restart: '点击空白处或按空格重新开始',
         lang: '中文 / EN',
         controls: '操作',
-        controlsBody: 'A/D 左右移动\nW 顺时针\nS 点按逆时针\nS 长按快降',
+        controlsBody: 'A/D 左右移动\nW 顺时针\nS 点按逆时针\nS 长按快降\n↓滚轮 极速落地',
         pauseButton: '暂停'
     },
     en: {
         title: 'Crazy Block',
         subtitle: '疯狂方块',
         start: 'Click empty space or press Space to start',
-        startHint: 'Left click = left | Right click = right | Wheel = rotate | Hold left = fast drop',
+        startHint: 'Hold L/R click to move | Click = 1 step | Scroll↓ fast drop | Scroll↑ rotate CW',
         score: 'Score',
         level: 'Level',
         lines: 'Lines',
@@ -60,7 +60,7 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
         restart: 'Click empty space or press Space to restart',
         lang: 'EN / 中文',
         controls: 'Controls',
-        controlsBody: 'A/D move\nW rotate CW\nS tap rotate CCW\nS hold fast drop',
+        controlsBody: 'A/D move  W rotate CW\nS tap CCW  S hold drop\nScroll\u2193 fast drop',
         pauseButton: 'Pause'
     }
 };

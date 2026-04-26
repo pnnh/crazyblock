@@ -29,7 +29,6 @@ export class GameScene extends Phaser.Scene {
 
     private boardGraphics!: Phaser.GameObjects.Graphics;
     private boardSprites: Phaser.GameObjects.Image[][] = [];
-    private ghostSprites: Phaser.GameObjects.Image[] = [];
     private nextSprites: Phaser.GameObjects.Image[] = [];
     private uiLabels = new Map<UiKey, Phaser.GameObjects.Text>();
     private uiValues = new Map<Exclude<UiKey, 'next' | 'controls'>, Phaser.GameObjects.Text>();
@@ -69,7 +68,6 @@ export class GameScene extends Phaser.Scene {
         this.audioManager = new AudioManager(this.sound.context as AudioContext | null);
         void this.audioManager.unlock();
 
-        this.createGhostTexture();
         this.drawStaticBackground();
         this.createBoardPool();
         this.createNextPool();
@@ -134,19 +132,12 @@ export class GameScene extends Phaser.Scene {
         this.inputManager.on('fastDropEnd', () => {
             this.fastDropActive = false;
         });
+        this.inputManager.on('hardDrop', () => {
+            if (!this.paused) {
+                this.hardDrop();
+            }
+        });
         this.inputManager.on('pause', () => this.togglePause());
-    }
-
-    private createGhostTexture(): void {
-        if (this.textures.exists('ghost')) {
-            return;
-        }
-
-        const graphics = this.make.graphics({ x: 0, y: 0 }, false);
-        graphics.lineStyle(3, 0xe7ecff, 0.45);
-        graphics.strokeRect(2, 2, GameScene.CELL_SIZE - 4, GameScene.CELL_SIZE - 4);
-        graphics.generateTexture('ghost', GameScene.CELL_SIZE, GameScene.CELL_SIZE);
-        graphics.destroy();
     }
 
     private drawStaticBackground(): void {
@@ -173,8 +164,8 @@ export class GameScene extends Phaser.Scene {
         this.boardGraphics.strokePath();
 
         this.boardGraphics.fillStyle(0x0d1120, 1);
-        this.boardGraphics.fillRoundedRect(GameScene.SIDE_X - 14, 28, 112, 128, 14);
-        this.boardGraphics.fillRoundedRect(GameScene.SIDE_X - 14, 176, 112, 244, 14);
+        this.boardGraphics.fillRoundedRect(GameScene.SIDE_X - 14, 92, 112, 128, 14);
+        this.boardGraphics.fillRoundedRect(GameScene.SIDE_X - 14, 240, 112, 244, 14);
     }
 
     private createBoardPool(): void {
@@ -185,11 +176,6 @@ export class GameScene extends Phaser.Scene {
                 sprite.setVisible(false);
                 this.boardSprites[y][x] = sprite;
             }
-        }
-
-        for (let index = 0; index < 4; index++) {
-            const ghost = this.add.image(0, 0, 'ghost').setVisible(false);
-            this.ghostSprites.push(ghost);
         }
     }
 
@@ -214,26 +200,26 @@ export class GameScene extends Phaser.Scene {
             fontStyle: 'bold'
         };
 
-        this.uiLabels.set('next', this.add.text(GameScene.SIDE_X, 40, '', labelStyle));
-        this.uiLabels.set('score', this.add.text(GameScene.SIDE_X, 190, '', labelStyle));
-        this.uiValues.set('score', this.add.text(GameScene.SIDE_X, 214, '0', valueStyle));
-        this.uiLabels.set('level', this.add.text(GameScene.SIDE_X, 258, '', labelStyle));
-        this.uiValues.set('level', this.add.text(GameScene.SIDE_X, 282, '1', valueStyle));
-        this.uiLabels.set('lines', this.add.text(GameScene.SIDE_X, 326, '', labelStyle));
-        this.uiValues.set('lines', this.add.text(GameScene.SIDE_X, 350, '0', valueStyle));
-        this.uiLabels.set('high', this.add.text(GameScene.SIDE_X, 394, '', labelStyle));
-        this.uiValues.set('high', this.add.text(GameScene.SIDE_X, 418, '0', valueStyle));
-        this.uiLabels.set('combo', this.add.text(GameScene.SIDE_X, 462, '', labelStyle));
-        this.uiValues.set('combo', this.add.text(GameScene.SIDE_X, 486, '0', valueStyle));
-        this.uiLabels.set('controls', this.add.text(GameScene.SIDE_X, 536, '', labelStyle));
-        this.controlsText = this.add.text(GameScene.SIDE_X, 562, '', {
+        this.uiLabels.set('next', this.add.text(GameScene.SIDE_X, 104, '', labelStyle));
+        this.uiLabels.set('score', this.add.text(GameScene.SIDE_X, 254, '', labelStyle));
+        this.uiValues.set('score', this.add.text(GameScene.SIDE_X, 278, '0', valueStyle));
+        this.uiLabels.set('level', this.add.text(GameScene.SIDE_X, 322, '', labelStyle));
+        this.uiValues.set('level', this.add.text(GameScene.SIDE_X, 346, '1', valueStyle));
+        this.uiLabels.set('lines', this.add.text(GameScene.SIDE_X, 390, '', labelStyle));
+        this.uiValues.set('lines', this.add.text(GameScene.SIDE_X, 414, '0', valueStyle));
+        this.uiLabels.set('high', this.add.text(GameScene.SIDE_X, 458, '', labelStyle));
+        this.uiValues.set('high', this.add.text(GameScene.SIDE_X, 482, '0', valueStyle));
+        this.uiLabels.set('combo', this.add.text(GameScene.SIDE_X, 526, '', labelStyle));
+        this.uiValues.set('combo', this.add.text(GameScene.SIDE_X, 550, '0', valueStyle));
+        this.uiLabels.set('controls', this.add.text(GameScene.SIDE_X, 600, '', labelStyle));
+        this.controlsText = this.add.text(GameScene.SIDE_X, 626, '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '15px',
             color: '#d4dcff',
             lineSpacing: 8
         });
 
-        this.langButton = this.add.text(this.scale.width - 18, 18, '', {
+        this.langButton = this.add.text(this.scale.width - 18, 8, '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '16px',
             color: '#11152a',
@@ -241,7 +227,7 @@ export class GameScene extends Phaser.Scene {
             padding: { left: 10, right: 10, top: 8, bottom: 8 }
         }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
 
-        this.pauseButton = this.add.text(this.scale.width - 18, 62, '', {
+        this.pauseButton = this.add.text(this.scale.width - 18, 48, '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '16px',
             color: '#11152a',
@@ -261,7 +247,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private createPauseOverlay(): void {
-        const shade = this.add.rectangle(250, 350, 500, 700, 0x04060c, 0.68);
+        const shade = this.add.rectangle(250, 375, 500, 750, 0x04060c, 0.68);
         const title = this.add.text(250, 300, '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '36px',
@@ -347,6 +333,16 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    private hardDrop(): void {
+        if (!this.currentPiece || this.gameEnded) {
+            return;
+        }
+
+        const ghostY = this.grid.getGhostPiecePosition(this.currentPiece);
+        this.currentPiece.y = ghostY;
+        this.lockPiece();
+    }
+
     private lockPiece(): void {
         if (!this.currentPiece) {
             return;
@@ -404,10 +400,6 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        for (const ghost of this.ghostSprites) {
-            ghost.setVisible(false);
-        }
-
         for (const cell of this.grid.getFilledCells()) {
             const sprite = this.boardSprites[cell.y][cell.x];
             sprite.setTexture(Tetromino.getTextureKey(cell.pieceType));
@@ -415,24 +407,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (this.currentPiece) {
-            const ghostY = this.grid.getGhostPiecePosition(this.currentPiece);
-            const activePositions = this.currentPiece.getBlockPositions();
-            const ghostPositions = this.currentPiece.clone();
-            ghostPositions.y = ghostY;
-            const blocks = ghostPositions.getBlockPositions();
-
-            let ghostIndex = 0;
-            for (const pos of blocks) {
-                const overlapsActive = activePositions.some((active) => active.x === pos.x && active.y === pos.y);
-                const occupied = this.grid.getCell(pos.x, pos.y)?.filled ?? true;
-                if (!overlapsActive && !occupied && ghostIndex < this.ghostSprites.length) {
-                    const ghost = this.ghostSprites[ghostIndex++];
-                    ghost.setPosition(this.cellCenterX(pos.x), this.cellCenterY(pos.y));
-                    ghost.setVisible(true);
-                }
-            }
-
-            for (const pos of activePositions) {
+            for (const pos of this.currentPiece.getBlockPositions()) {
                 const sprite = this.boardSprites[pos.y][pos.x];
                 sprite.setTexture(this.currentPiece.textureKey);
                 sprite.setVisible(true);
@@ -470,7 +445,7 @@ export class GameScene extends Phaser.Scene {
         const height = maxY - minY + 1;
         const cell = 24;
         const startX = GameScene.SIDE_X + 46 - width * cell / 2;
-        const startY = 108 - height * cell / 2;
+        const startY = 156 - height * cell / 2;
 
         positions.forEach((pos, index) => {
             const sprite = this.nextSprites[index];
