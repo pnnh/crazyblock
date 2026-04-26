@@ -5,8 +5,8 @@ import { StartScene } from './scenes/StartScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    width: 500,
-    height: 750,
+    width: 560,
+    height: 780,
     parent: 'game-container',
     backgroundColor: '#10121d',
     scene: [StartScene, GameScene, GameOverScene],
