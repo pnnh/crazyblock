@@ -98,11 +98,24 @@ export class Tetromino {
 
     private readonly pieceType: TetrominoType;
     private currentRotation = 0;
+    private blockTextures: number[] = [];
     private positionX = 0;
     private positionY = 0;
 
     constructor(type: TetrominoType) {
         this.pieceType = type;
+        this.initBlockTextures();
+    }
+
+    private initBlockTextures(): void {
+        // Shuffle all 7 types and pick 4 distinct ones so every block in the piece
+        // shows a different icon, making it look like mixed sub-shapes.
+        const types = [0, 1, 2, 3, 4, 5, 6];
+        for (let i = types.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [types[i], types[j]] = [types[j], types[i]];
+        }
+        this.blockTextures = types.slice(0, 4);
     }
 
     public static getRandomType(): TetrominoType {
@@ -184,7 +197,28 @@ export class Tetromino {
         cloned.currentRotation = this.currentRotation;
         cloned.positionX = this.positionX;
         cloned.positionY = this.positionY;
+        cloned.blockTextures = [...this.blockTextures];
         return cloned;
+    }
+
+    /** Returns the raw per-block texture id list (one per filled cell, scan order). */
+    public getBlockTexturesList(): number[] {
+        return [...this.blockTextures];
+    }
+
+    /** Like getBlockPositions but each entry includes the fgColorId for that block. */
+    public getBlockPositionsWithTextures(): Array<{ x: number; y: number; fgColorId: number }> {
+        const shape = this.getCurrentShape();
+        const result: Array<{ x: number; y: number; fgColorId: number }> = [];
+        let idx = 0;
+        for (let row = 0; row < shape.length; row++) {
+            for (let col = 0; col < shape[row].length; col++) {
+                if (shape[row][col] === 1) {
+                    result.push({ x: this.positionX + col, y: this.positionY + row, fgColorId: this.blockTextures[idx++] });
+                }
+            }
+        }
+        return result;
     }
 
     private getPositionsForShape(shape: number[][]): Array<{ x: number; y: number }> {

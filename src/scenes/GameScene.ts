@@ -8,7 +8,7 @@ import { PhysicsSimulator } from '../game/PhysicsSimulator';
 import { Movement } from '../game/PhysicsSimulator';
 import { ScoreManager } from '../game/ScoreManager';
 import { TextureFactory } from '../game/TextureFactory';
-import { Tetromino, TetrominoType } from '../game/Tetromino';
+import { Tetromino } from '../game/Tetromino';
 import { getStoredLanguage, Language, t, toggleLanguage } from '../i18n';
 
 type UiKey = 'score' | 'level' | 'lines' | 'high' | 'combo' | 'next' | 'controls';
@@ -22,8 +22,8 @@ export class GameScene extends Phaser.Scene {
     // Layout
     private static readonly CELL_SIZE = 30;
     private static readonly BOARD_X = 20;
-    private static readonly BOARD_Y = 28;
-    private static readonly SIDE_X = 392;
+    private static readonly BOARD_Y = 18;
+    private static readonly SIDE_X = 404;
 
     // Input timing
     private static readonly HOLD_THRESHOLD = 300;
@@ -40,7 +40,7 @@ export class GameScene extends Phaser.Scene {
     private audioManager!: AudioManager;
 
     private currentPiece: Tetromino | null = null;
-    private nextPieceType: TetrominoType = TetrominoType.I;
+    private nextPiece!: Tetromino;
     private fallTimer = 0;
     private paused = false;
     private gameEnded = false;
@@ -103,7 +103,7 @@ export class GameScene extends Phaser.Scene {
         this.createPauseOverlay();
         this.setupInput();
 
-        this.nextPieceType = Tetromino.getRandomType();
+        this.nextPiece = Tetromino.createRandom();
         this.spawnPiece();
         this.refreshLanguage();
         this.renderBoard();
@@ -300,10 +300,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     private spawnPiece(): void {
-        this.currentPiece = new Tetromino(this.nextPieceType);
+        this.currentPiece = this.nextPiece;
         this.currentPiece.x = Math.floor(Grid.WIDTH / 2) - 2;
         this.currentPiece.y = Grid.HEIGHT - 4;
-        this.nextPieceType = Tetromino.getRandomType();
+        this.nextPiece = Tetromino.createRandom();
 
         if (!this.grid.canPlacePiece(this.currentPiece)) {
             this.handleGameOver();
@@ -469,21 +469,6 @@ export class GameScene extends Phaser.Scene {
         this.boardBgGraphics.clear();
         this.boardOverlayGraphics.clear();
 
-        // Ghost piece background
-        if (this.currentPiece && !this.gameEnded) {
-            const ghostY = this.grid.getGhostPiecePosition(this.currentPiece);
-            if (ghostY !== this.currentPiece.y) {
-                const ghost = this.currentPiece.clone();
-                ghost.y = ghostY;
-                for (const pos of ghost.getBlockPositions()) {
-                    if (this.grid.isValidPosition(pos.x, pos.y)) {
-                        this.boardBgGraphics.fillStyle(0x334488, 0.3);
-                        this.boardBgGraphics.fillRect(this.cellX(pos.x), this.cellY(pos.y), CS - 1, CS - 1);
-                    }
-                }
-            }
-        }
-
         // Settled cells
         for (let y = 0; y < Grid.HEIGHT; y++) {
             for (let x = 0; x < Grid.WIDTH; x++) {
@@ -506,14 +491,14 @@ export class GameScene extends Phaser.Scene {
             }
         }
 
-        // Current falling piece
+        // Current falling piece — use per-block textures
         if (this.currentPiece && !this.gameEnded) {
-            for (const pos of this.currentPiece.getBlockPositions()) {
+            for (const pos of this.currentPiece.getBlockPositionsWithTextures()) {
                 if (this.grid.isValidPosition(pos.x, pos.y)) {
                     this.boardBgGraphics.fillStyle(0x2a3a6a, 0.6);
                     this.boardBgGraphics.fillRect(this.cellX(pos.x), this.cellY(pos.y), CS - 1, CS - 1);
                     this.boardSprites[pos.y][pos.x]
-                        .setTexture(`fg_${this.currentPiece.type}`)
+                        .setTexture(`fg_${pos.fgColorId}`)
                         .setVisible(true);
                 }
             }
@@ -533,12 +518,15 @@ export class GameScene extends Phaser.Scene {
     private renderNextPiece(): void {
         for (const s of this.nextSprites) s.setVisible(false);
 
-        const previewPiece = new Tetromino(this.nextPieceType);
-        const shape = previewPiece.getShapeAtRotation(0);
-        const positions: { x: number; y: number }[] = [];
+        const shape = this.nextPiece.getShapeAtRotation(0);
+        const textures = this.nextPiece.getBlockTexturesList();
+        const positions: { x: number; y: number; fgColorId: number }[] = [];
+        let blockIdx = 0;
         for (let row = 0; row < shape.length; row++) {
             for (let col = 0; col < shape[row].length; col++) {
-                if (shape[row][col] === 1) positions.push({ x: col, y: row });
+                if (shape[row][col] === 1) {
+                    positions.push({ x: col, y: row, fgColorId: textures[blockIdx++] });
+                }
             }
         }
         if (positions.length === 0) return;
@@ -550,13 +538,13 @@ export class GameScene extends Phaser.Scene {
         const w = maxX - minX + 1;
         const h = maxY - minY + 1;
         const cell = 24;
-        const panelCenterX = GameScene.SIDE_X + (560 - GameScene.SIDE_X) / 2;
+        const panelCenterX = GameScene.SIDE_X + (this.scale.width - GameScene.SIDE_X) / 2;
         const startX = panelCenterX - (w * cell) / 2;
-        const startY = 148 - (h * cell) / 2;
+        const startY = 133 - (h * cell) / 2;
 
         positions.forEach((pos, i) => {
             const s = this.nextSprites[i];
-            s.setTexture(`fg_${previewPiece.type}`)
+            s.setTexture(`fg_${pos.fgColorId}`)
                 .setPosition(startX + (pos.x - minX) * cell + cell / 2, startY + (pos.y - minY) * cell + cell / 2)
                 .setScale(0.8)
                 .setVisible(true);
@@ -602,9 +590,9 @@ export class GameScene extends Phaser.Scene {
 
         // Side panel cards
         bg.fillStyle(0x0d1120, 1);
-        bg.fillRoundedRect(sx - 4, 38, sw, 200, 12);  // next
-        bg.fillRoundedRect(sx - 4, 254, sw, 290, 12); // stats
-        bg.fillRoundedRect(sx - 4, 560, sw, 190, 12); // controls
+        bg.fillRoundedRect(sx - 4, 38, sw, 190, 12);  // next
+        bg.fillRoundedRect(sx - 4, 246, sw, 270, 12); // stats
+        bg.fillRoundedRect(sx - 4, 534, sw, 175, 12); // controls
 
         // Background graphics layers (cleared each frame)
         this.boardBgGraphics = this.add.graphics();
@@ -645,18 +633,18 @@ export class GameScene extends Phaser.Scene {
         };
 
         this.uiLabels.set('next', this.add.text(sx, 46, '', lStyle));
-        this.uiLabels.set('score', this.add.text(sx, 262, '', lStyle));
-        this.uiValues.set('score', this.add.text(sx, 282, '0', vStyle));
-        this.uiLabels.set('level', this.add.text(sx, 316, '', lStyle));
-        this.uiValues.set('level', this.add.text(sx, 336, '1', vStyle));
-        this.uiLabels.set('lines', this.add.text(sx, 370, '', lStyle));
-        this.uiValues.set('lines', this.add.text(sx, 390, '0', vStyle));
-        this.uiLabels.set('high', this.add.text(sx, 424, '', lStyle));
-        this.uiValues.set('high', this.add.text(sx, 444, '0', vStyle));
-        this.uiLabels.set('combo', this.add.text(sx, 478, '', lStyle));
-        this.uiValues.set('combo', this.add.text(sx, 498, '0', vStyle));
-        this.uiLabels.set('controls', this.add.text(sx, 568, '', lStyle));
-        this.controlsText = this.add.text(sx, 590, '', {
+        this.uiLabels.set('score', this.add.text(sx, 254, '', lStyle));
+        this.uiValues.set('score', this.add.text(sx, 274, '0', vStyle));
+        this.uiLabels.set('level', this.add.text(sx, 302, '', lStyle));
+        this.uiValues.set('level', this.add.text(sx, 322, '1', vStyle));
+        this.uiLabels.set('lines', this.add.text(sx, 350, '', lStyle));
+        this.uiValues.set('lines', this.add.text(sx, 370, '0', vStyle));
+        this.uiLabels.set('high', this.add.text(sx, 398, '', lStyle));
+        this.uiValues.set('high', this.add.text(sx, 418, '0', vStyle));
+        this.uiLabels.set('combo', this.add.text(sx, 446, '', lStyle));
+        this.uiValues.set('combo', this.add.text(sx, 466, '0', vStyle));
+        this.uiLabels.set('controls', this.add.text(sx, 542, '', lStyle));
+        this.controlsText = this.add.text(sx, 562, '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '13px',
             color: '#d4dcff',
@@ -691,15 +679,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     private createPauseOverlay(): void {
-        const { width } = this.scale;
-        const shade = this.add.rectangle(width / 2, 390, width, 780, 0x04060c, 0.68);
-        const title = this.add.text(width / 2, 330, '', {
+        const { width, height } = this.scale;
+        const shade = this.add.rectangle(width / 2, height / 2, width, height, 0x04060c, 0.68);
+        const title = this.add.text(width / 2, Math.round(height * 0.42), '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '36px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
-        const hint = this.add.text(width / 2, 384, '', {
+        const hint = this.add.text(width / 2, Math.round(height * 0.50), '', {
             fontFamily: 'Segoe UI, Microsoft YaHei, sans-serif',
             fontSize: '18px',
             color: '#d3dcff',

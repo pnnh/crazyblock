@@ -55,12 +55,12 @@ export class Grid {
     }
 
     public lockPiece(piece: Tetromino, registry: GroupRegistry): void {
-        const positions = piece.getBlockPositions().filter((pos) => this.isValidPosition(pos.x, pos.y));
-        const groupId = registry.createGroup(positions, piece.color);
-        for (const pos of positions) {
-            this.boardCells[pos.y][pos.x] = {
+        const blocks = piece.getBlockPositionsWithTextures().filter((b) => this.isValidPosition(b.x, b.y));
+        const groupId = registry.createGroup(blocks.map((b) => ({ x: b.x, y: b.y })), piece.color);
+        for (const block of blocks) {
+            this.boardCells[block.y][block.x] = {
                 filled: true,
-                fgColorId: piece.type,
+                fgColorId: block.fgColorId,
                 groupId
             };
         }

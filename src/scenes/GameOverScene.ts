@@ -15,6 +15,7 @@ export class GameOverScene extends Phaser.Scene {
     private level = 1;
     private lines = 0;
     private highScore = 0;
+    private restarting = false;
     private titleText!: Phaser.GameObjects.Text;
     private bodyText!: Phaser.GameObjects.Text;
     private restartText!: Phaser.GameObjects.Text;
@@ -83,10 +84,14 @@ export class GameOverScene extends Phaser.Scene {
         });
 
         this.input.keyboard?.on('keydown-SPACE', this.restart, this);
-        this.input.on('pointerdown', this.handlePointerDown, this);
+        // Transparent overlay covers the whole screen so any click (except the lang button,
+        // which calls stopPropagation) will trigger restart.
+        this.add.rectangle(width / 2, height / 2, width, height)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => this.restart());
+        this.langButton.setDepth(10);
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.input.keyboard?.off('keydown-SPACE', this.restart, this);
-            this.input.off('pointerdown', this.handlePointerDown, this);
         });
 
         this.refreshTexts();
@@ -104,13 +109,9 @@ export class GameOverScene extends Phaser.Scene {
         this.langButton.setText(t('lang', this.language));
     }
 
-    private handlePointerDown(pointer: Phaser.Input.Pointer): void {
-        if (pointer.leftButtonDown()) {
-            this.restart();
-        }
-    }
-
     private restart(): void {
+        if (this.restarting) return;
+        this.restarting = true;
         this.scene.start('GameScene', { language: this.language });
     }
 }
