@@ -1,0 +1,21 @@
+{
+  "name": "crazyblock",
+  "version": "1.0.0",
+  "description": "A bilingual Phaser 3 Tetris game using reused atetris block textures",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4173",
+    "build": "vite build",
+    "preview": "vite preview",
+    "wrangler": "wrangler dev"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3",
+    "vite": "^5.0.0",
+    "wrangler": "^4.79.0"
+  }
+}
