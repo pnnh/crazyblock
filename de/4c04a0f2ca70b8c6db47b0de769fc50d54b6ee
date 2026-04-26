@@ -1,0 +1,29 @@
+src/i18n/index.ts
+  d55dcc1e1adf6f39 30,43,50,63
+src/scenes/GameScene.ts
+  d55dcc1e1adf6f39 135-139,167-168,203-215,222,230,250,336-345,410,448
+src/bootstrap.ts
+  d55dcc1e1adf6f39 9
+src/game/InputManager.ts
+  d55dcc1e1adf6f39 3,12-16,26-29,80-85,142,144-148,153-154,156-157,170-174,235-249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "de4c04a0f2ca70b8c6db47b0de769fc50d54b6ee",
+  "prompts": {
+    "d55dcc1e1adf6f39": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "e10882bc-a7fc-4345-8757-e695adb8f6fa",
+        "model": "copilot/auto"
+      },
+      "human_author": "pnnh",
+      "messages": [],
+      "total_additions": 89,
+      "total_deletions": 109,
+      "accepted_lines": 881,
+      "overriden_lines": 0
+    }
+  }
+}
