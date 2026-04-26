@@ -1,0 +1,62 @@
+src/game/ScoreManager.ts
+  h_9543ae69173e60 1-97
+package.json
+  h_9543ae69173e60 1-21
+.gitignore
+  h_9543ae69173e60 1-28
+wrangler.jsonc
+  h_9543ae69173e60 1-17
+src/i18n/index.ts
+  h_9543ae69173e60 1-85
+tsconfig.json
+  h_9543ae69173e60 1-20
+src/game/Grid.ts
+  h_9543ae69173e60 1-136
+src/game/InputManager.ts
+  h_9543ae69173e60 1-283
+index.html
+  h_9543ae69173e60 1-45
+src/bootstrap.ts
+  7c96f08e4a970d6f 1-20
+README.md
+  h_9543ae69173e60 1-29
+src/main.ts
+  7c96f08e4a970d6f 1
+src/game/AudioManager.ts
+  h_9543ae69173e60 1-85
+vite.config.ts
+  7c96f08e4a970d6f 1-16
+src/scenes/StartScene.ts
+  h_9543ae69173e60 1-151
+src/game/Tetromino.ts
+  h_9543ae69173e60 1-203
+src/scenes/GameScene.ts
+  h_9543ae69173e60 1-516
+src/scenes/GameOverScene.ts
+  h_9543ae69173e60 1-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f70a1736cdfe89010c573a882ae288965f167572",
+  "prompts": {
+    "7c96f08e4a970d6f": {
+      "agent_id": {
+        "tool": "github-copilot",
+        "id": "dd7cebb2-95eb-4ba8-bcf0-f99203d0250c",
+        "model": "copilot/claude-sonnet-4.6"
+      },
+      "human_author": "pnnh",
+      "messages": [],
+      "total_additions": 37,
+      "total_deletions": 20,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_9543ae69173e60": {
+      "author": "pnnh"
+    }
+  }
+}
