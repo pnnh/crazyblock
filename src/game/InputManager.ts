@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-type ActionName = 'left' | 'right' | 'rotateCW' | 'rotateCCW' | 'fastDropStart' | 'fastDropEnd' | 'hardDrop' | 'pause';
+type ActionName = 'left' | 'right' | 'rotateCW' | 'rotateCCW' | 'fastDropStart' | 'fastDropEnd' | 'hardDrop' | 'stepDown' | 'pause';
 type ActionCallback = () => void;
 
 interface RepeatState {
@@ -18,6 +18,7 @@ export class InputManager {
     private static readonly HOLD_THRESHOLD = 300;
     private static readonly INITIAL_REPEAT_DELAY = 170;
     private static readonly REPEAT_RATE = 50;
+    private static readonly SCROLL_STEP_INTERVAL = 30;
 
     private readonly scene: Phaser.Scene;
     private readonly callbacks = new Map<ActionName, ActionCallback[]>();
@@ -25,8 +26,7 @@ export class InputManager {
     private readonly moveKeys: Phaser.Input.Keyboard.Key[] = [];
     private leftMoveState: ButtonMoveState | null = null;
     private rightMoveState: ButtonMoveState | null = null;
-    private wheelFastDropActive = false;
-    private wheelFastDropTimer = 0;
+    private lastScrollStepAt = 0;
     private sKeyHoldStart = 0;
     private sKeyFastDropActive = false;
 
@@ -79,11 +79,6 @@ export class InputManager {
 
         this.updatePointerMove(this.leftMoveState, 'left', now);
         this.updatePointerMove(this.rightMoveState, 'right', now);
-
-        if (this.wheelFastDropActive && now >= this.wheelFastDropTimer) {
-            this.wheelFastDropActive = false;
-            this.emit('fastDropEnd');
-        }
 
         if (this.keyS.isDown && this.sKeyHoldStart > 0 && !this.sKeyFastDropActive && now - this.sKeyHoldStart >= InputManager.HOLD_THRESHOLD) {
             this.sKeyFastDropActive = true;
@@ -167,10 +162,10 @@ export class InputManager {
         if (deltaY < 0) {
             this.emit('rotateCW');
         } else if (deltaY > 0) {
-            this.wheelFastDropTimer = this.scene.time.now + 400;
-            if (!this.wheelFastDropActive) {
-                this.wheelFastDropActive = true;
-                this.emit('fastDropStart');
+            const now = this.scene.time.now;
+            if (now - this.lastScrollStepAt >= InputManager.SCROLL_STEP_INTERVAL) {
+                this.lastScrollStepAt = now;
+                this.emit('stepDown');
             }
         }
     }

@@ -137,6 +137,11 @@ export class GameScene extends Phaser.Scene {
                 this.hardDrop();
             }
         });
+        this.inputManager.on('stepDown', () => {
+            if (!this.paused) {
+                this.movePiece(0, -1, true);
+            }
+        });
         this.inputManager.on('pause', () => this.togglePause());
     }
 
@@ -267,6 +272,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private spawnPiece(): void {
+        this.fastDropActive = false;
         this.currentPiece = new Tetromino(this.nextPieceType);
         this.currentPiece.x = Math.floor(Grid.WIDTH / 2) - 2;
         this.currentPiece.y = Grid.HEIGHT - 4;
